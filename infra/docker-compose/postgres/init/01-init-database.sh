@@ -1,24 +1,12 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-DB_NAME="logiroute-menu"
-DB_EXISTS=$(psql -U ${POSTGRES_USER} -tAc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME}'")
+: "${POSTGRES_USER:?POSTGRES_USER is required}"
 
-if [ "${DB_EXISTS}" != "1" ]; then
-  # Create the database
-  createdb -U ${POSTGRES_USER} -O ${POSTGRES_USER} ${DB_NAME}
-  echo "Database ${DB_NAME} created."
-else
-  echo "Database ${DB_NAME} already exists."
-fi
+DBS=("logiroute-menu" "logiroute-order")
 
-DB_NAME="logiroute-order"
-DB_EXISTS=$(psql -U ${POSTGRES_USER} -tAc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME}'")
-
-if [ "${DB_EXISTS}" != "1" ]; then
-  # Create the database
-  createdb -U ${POSTGRES_USER} -O ${POSTGRES_USER} ${DB_NAME}
-  echo "Database ${DB_NAME} created."
-else
-  echo "Database ${DB_NAME} already exists."
-fi
+for db in "${DBS[@]}"; do
+  if createdb -U "${POSTGRES_USER}" -O "${POSTGRES_USER}" --if-not-exists "${db}"; then
+    echo "Database ${db} ensured."
+  fi
+done
