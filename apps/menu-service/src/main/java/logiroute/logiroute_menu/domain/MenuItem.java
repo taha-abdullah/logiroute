@@ -64,4 +64,9 @@ public class MenuItem {
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
     }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = Instant.now();
+    }
 }
