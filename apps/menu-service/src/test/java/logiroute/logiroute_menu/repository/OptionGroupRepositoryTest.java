@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -35,6 +36,9 @@ class OptionGroupRepositoryTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private MenuItem testMenuItem;
 
@@ -113,6 +117,7 @@ class OptionGroupRepositoryTest {
         // Act - Soft delete the first group
         optionGroupRepository.delete(savedGroup1);
         optionGroupRepository.flush();
+        entityManager.clear();
 
         // Assert - Only the second group should be found
         List<OptionGroup> remainingGroups = optionGroupRepository.findByMenuItemId(testMenuItem.getId());
@@ -120,11 +125,11 @@ class OptionGroupRepositoryTest {
         assertThat(remainingGroups.get(0).getName()).isEqualTo("Veggies");
 
         // Verify the deleted group still exists in the DB physically
-        Integer dbCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM option_groups WHERE id = ?",
-                Integer.class,
+        Long dbCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM option_groups WHERE id = ? AND deleted_at IS NOT NULL",
+                Long.class,
                 savedGroup1.getId()
         );
-        assertThat(dbCount).isEqualTo(1);
+        assertThat(dbCount).isEqualTo(1L);
     }
 }
