@@ -12,5 +12,7 @@ public record UpdateOptionGroupRequest(
         @PositiveOrZero(message = "Min selectable must be positive or zero")
         Integer minSelectable,
         
+        @NotNull(message = "Max selectable is required")
+        @PositiveOrZero(message = "Max selectable must be positive or zero")
         Integer maxSelectable
 ) {}

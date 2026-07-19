@@ -8,7 +8,7 @@ public record MenuItemResponse(
         UUID categoryId,
         String name,
         String description,
-        Long basePriceCents,
+        Integer basePriceCents,
         Boolean isVegan,
         Boolean isGlutenFree,
         Boolean isAvailable,

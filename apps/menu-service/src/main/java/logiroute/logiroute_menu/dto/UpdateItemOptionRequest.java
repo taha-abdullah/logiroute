@@ -10,7 +10,7 @@ public record UpdateItemOptionRequest(
         
         @NotNull(message = "Price is required")
         @PositiveOrZero(message = "Price must be positive or zero")
-        Long priceCents,
+        Integer priceCents,
         
         @NotNull(message = "isAvailable status is required")
         Boolean isAvailable

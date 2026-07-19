@@ -7,7 +7,7 @@ public record ItemOptionResponse(
         UUID id,
         UUID optionGroupId,
         String name,
-        Long priceCents,
+        Integer priceCents,
         Boolean isAvailable,
         Instant createdAt,
         Instant updatedAt

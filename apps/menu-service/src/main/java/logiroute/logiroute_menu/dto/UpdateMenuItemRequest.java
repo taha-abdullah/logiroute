@@ -12,7 +12,7 @@ public record UpdateMenuItemRequest(
         
         @NotNull(message = "Base price is required")
         @PositiveOrZero(message = "Price must be positive or zero")
-        Long basePriceCents,
+        Integer basePriceCents,
         
         Boolean isVegan,
         
@@ -20,4 +20,9 @@ public record UpdateMenuItemRequest(
         
         @NotNull(message = "isAvailable status is required")
         Boolean isAvailable
-) {}
+) {
+    public UpdateMenuItemRequest {
+        if (isVegan == null) isVegan = false;
+        if (isGlutenFree == null) isGlutenFree = false;
+    }
+}
