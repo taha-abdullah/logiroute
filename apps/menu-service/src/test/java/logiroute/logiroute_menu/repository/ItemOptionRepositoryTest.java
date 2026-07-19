@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -35,6 +36,9 @@ class ItemOptionRepositoryTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private OptionGroup testOptionGroup;
 
@@ -117,6 +121,7 @@ class ItemOptionRepositoryTest {
         // Act - Soft delete the first option
         itemOptionRepository.delete(savedOption1);
         itemOptionRepository.flush();
+        entityManager.clear();
 
         // Assert - Only the second option should be found
         List<ItemOption> remainingOptions = itemOptionRepository.findByOptionGroupId(testOptionGroup.getId());
@@ -124,11 +129,11 @@ class ItemOptionRepositoryTest {
         assertThat(remainingOptions.get(0).getName()).isEqualTo("Mushrooms");
 
         // Verify the deleted option still exists in the DB physically
-        Integer dbCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM item_options WHERE id = ?",
-                Integer.class,
+        Long dbCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM item_options WHERE id = ? AND deleted_at IS NOT NULL",
+                Long.class,
                 savedOption1.getId()
         );
-        assertThat(dbCount).isEqualTo(1);
+        assertThat(dbCount).isEqualTo(1L);
     }
 }

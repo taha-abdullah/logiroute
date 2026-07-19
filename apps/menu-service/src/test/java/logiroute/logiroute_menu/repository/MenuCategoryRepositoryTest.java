@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -27,6 +28,9 @@ class MenuCategoryRepositoryTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private Restaurant testRestaurant;
 
@@ -80,6 +84,7 @@ class MenuCategoryRepositoryTest {
         // Act - Soft delete the first category
         menuCategoryRepository.delete(savedCat1);
         menuCategoryRepository.flush();
+        entityManager.clear();
 
         // Assert - Only the second category should be found
         List<MenuCategory> remainingCategories = menuCategoryRepository.findByRestaurantIdOrderBySortOrderAsc(testRestaurant.getId());
@@ -87,11 +92,11 @@ class MenuCategoryRepositoryTest {
         assertThat(remainingCategories.get(0).getName()).isEqualTo("Drinks");
 
         // Verify the deleted category still exists in the DB physically
-        Integer dbCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM menu_categories WHERE id = ?",
-                Integer.class,
+        Long dbCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM menu_categories WHERE id = ? AND deleted_at IS NOT NULL",
+                Long.class,
                 savedCat1.getId()
         );
-        assertThat(dbCount).isEqualTo(1);
+        assertThat(dbCount).isEqualTo(1L);
     }
 }

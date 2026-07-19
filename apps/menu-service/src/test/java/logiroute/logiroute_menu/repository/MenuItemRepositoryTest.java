@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -31,6 +32,9 @@ class MenuItemRepositoryTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private MenuCategory testCategory;
 
@@ -93,6 +97,7 @@ class MenuItemRepositoryTest {
         // Act - Soft delete the first item
         menuItemRepository.delete(savedItem1);
         menuItemRepository.flush();
+        entityManager.clear();
 
         // Assert - Only the second item should be found
         List<MenuItem> remainingItems = menuItemRepository.findByCategoryId(testCategory.getId());
@@ -100,11 +105,11 @@ class MenuItemRepositoryTest {
         assertThat(remainingItems.get(0).getName()).isEqualTo("Fries");
 
         // Verify the deleted item still exists in the DB physically
-        Integer dbCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM menu_items WHERE id = ?",
-                Integer.class,
+        Long dbCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM menu_items WHERE id = ? AND deleted_at IS NOT NULL",
+                Long.class,
                 savedItem1.getId()
         );
-        assertThat(dbCount).isEqualTo(1);
+        assertThat(dbCount).isEqualTo(1L);
     }
 }

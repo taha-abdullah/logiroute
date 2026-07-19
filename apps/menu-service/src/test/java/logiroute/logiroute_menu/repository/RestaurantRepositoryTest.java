@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.jdbc.core.JdbcTemplate;
+import jakarta.persistence.EntityManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -22,6 +23,9 @@ class RestaurantRepositoryTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Test
     void shouldSaveAndRetrieveRestaurant() {
@@ -62,6 +66,7 @@ class RestaurantRepositoryTest {
         // Act
         restaurantRepository.delete(saved);
         restaurantRepository.flush(); // Force the delete query execution
+        entityManager.clear(); // Clear persistence context to hit DB
 
         // Assert
         // 1. Shouldn't be found via repository because of @SQLRestriction
@@ -69,11 +74,11 @@ class RestaurantRepositoryTest {
         assertThat(found).isEmpty();
 
         // 2. Should still exist in the database with deleted_at set
-        Integer count = jdbcTemplate.queryForObject(
+        Long count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM restaurants WHERE id = ? AND deleted_at IS NOT NULL",
-                Integer.class,
+                Long.class,
                 saved.getId()
         );
-        assertThat(count).isEqualTo(1);
+        assertThat(count).isEqualTo(1L);
     }
 }
