@@ -4,6 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import logiroute.logiroute_order.domain.entity.Order;
 import logiroute.logiroute_order.domain.enums.OrderStatus;
 import logiroute.logiroute_order.repository.OrderRepository;
+import logiroute.logiroute_order.exception.InvalidOrderStateException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,7 +39,7 @@ public class OrderService {
         
         // Simple state machine validation could be added here
         if (order.getStatus() == OrderStatus.DELIVERED || order.getStatus() == OrderStatus.CANCELLED) {
-            throw new IllegalStateException("Cannot change status of a " + order.getStatus() + " order");
+            throw new InvalidOrderStateException("Cannot change status of a " + order.getStatus() + " order");
         }
 
         order.setStatus(newStatus);
