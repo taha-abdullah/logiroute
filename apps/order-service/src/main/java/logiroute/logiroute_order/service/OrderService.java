@@ -22,13 +22,38 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final RabbitTemplate rabbitTemplate;
+    private final logiroute.logiroute_order.client.MenuServiceClient menuServiceClient;
 
     @Transactional
     public Order createOrder(Order order) {
         order.setStatus(OrderStatus.PENDING);
-        if (order.getItems() != null) {
-            order.getItems().forEach(item -> item.setOrder(order));
+        
+        if (order.getItems() != null && !order.getItems().isEmpty()) {
+            java.util.List<java.util.UUID> itemIds = order.getItems().stream()
+                    .map(logiroute.logiroute_order.domain.entity.OrderItem::getMenuItemId)
+                    .toList();
+                    
+            java.util.List<logiroute.logiroute_order.dto.MenuItemResponse> menuItems = menuServiceClient.getMenuItems(itemIds);
+            
+            java.util.Map<java.util.UUID, logiroute.logiroute_order.dto.MenuItemResponse> itemMap = menuItems.stream()
+                    .collect(java.util.stream.Collectors.toMap(logiroute.logiroute_order.dto.MenuItemResponse::id, item -> item));
+            
+            for (logiroute.logiroute_order.domain.entity.OrderItem item : order.getItems()) {
+                logiroute.logiroute_order.dto.MenuItemResponse menuItem = itemMap.get(item.getMenuItemId());
+                if (menuItem == null) {
+                    throw new IllegalArgumentException("Menu item not found: " + item.getMenuItemId());
+                }
+                if (Boolean.FALSE.equals(menuItem.isAvailable())) {
+                    throw new IllegalArgumentException("Menu item is not available: " + item.getMenuItemId());
+                }
+                
+                // Set the authoritative price from the menu service
+                java.math.BigDecimal price = java.math.BigDecimal.valueOf(menuItem.basePriceCents()).divide(java.math.BigDecimal.valueOf(100));
+                item.setPrice(price);
+                item.setOrder(order);
+            }
         }
+        
         Order savedOrder = orderRepository.save(order);
         log.info("Created new order with ID: {}", savedOrder.getId());
         return savedOrder;

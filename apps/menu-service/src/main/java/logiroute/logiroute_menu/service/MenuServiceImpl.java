@@ -115,6 +115,20 @@ public class MenuServiceImpl implements MenuService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public MenuItemResponse getMenuItem(UUID itemId) {
+        MenuItem item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("MenuItem not found with id: " + itemId));
+        return menuMapper.toItemResponse(item);
+    }
+
+    @Override
+    public List<MenuItemResponse> getMenuItemsByIds(List<UUID> itemIds) {
+        return itemRepository.findAllById(itemIds).stream()
+                .map(menuMapper::toItemResponse)
+                .collect(Collectors.toList());
+    }
+
     // --- Option Groups ---
 
     @Override
