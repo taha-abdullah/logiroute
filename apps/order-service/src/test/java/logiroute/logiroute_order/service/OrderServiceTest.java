@@ -28,13 +28,17 @@ class OrderServiceTest {
     private OrderService orderService;
 
     @Test
-    void testCreateOrderSetsPendingStatus() {
+    void testCreateOrderSetsPendingStatusAndBackReferences() {
         Order order = new Order();
+        logiroute.logiroute_order.domain.entity.OrderItem item = new logiroute.logiroute_order.domain.entity.OrderItem();
+        order.getItems().add(item);
+        
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Order result = orderService.createOrder(order);
 
         assertEquals(OrderStatus.PENDING, result.getStatus());
+        assertEquals(order, item.getOrder(), "Back-reference should be populated");
         verify(orderRepository).save(order);
     }
 
@@ -62,15 +66,15 @@ class OrderServiceTest {
     }
 
     @Test
-    void testUpdateOrderStatusThrowsWhenDelivered() {
+    void testUpdateOrderStatusThrowsWhenInvalidTransition() {
         UUID orderId = UUID.randomUUID();
         Order order = new Order();
-        order.setStatus(OrderStatus.DELIVERED);
+        order.setStatus(OrderStatus.PENDING); // Valid next states: ACCEPTED, CANCELLED
         
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
 
         assertThrows(InvalidOrderStateException.class, () -> 
-            orderService.updateOrderStatus(orderId, OrderStatus.ACCEPTED)
+            orderService.updateOrderStatus(orderId, OrderStatus.DELIVERED)
         );
         
         verify(orderRepository, never()).save(any());
