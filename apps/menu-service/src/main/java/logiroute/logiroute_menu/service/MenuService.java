@@ -16,6 +16,8 @@ public interface MenuService {
     MenuItemResponse updateMenuItem(UUID itemId, UpdateMenuItemRequest request);
     void deleteMenuItem(UUID itemId);
     List<MenuItemResponse> getMenuItemsByCategory(UUID categoryId);
+    MenuItemResponse getMenuItem(UUID itemId);
+    List<MenuItemResponse> getMenuItemsByIds(List<UUID> itemIds);
 
     // Option Groups
     OptionGroupResponse createOptionGroup(UUID itemId, CreateOptionGroupRequest request);

@@ -30,6 +30,9 @@ class OrderServiceTest {
     @Mock
     private RabbitTemplate rabbitTemplate;
 
+    @Mock
+    private logiroute.logiroute_order.client.MenuServiceClient menuServiceClient;
+
     @InjectMocks
     private OrderService orderService;
 
@@ -37,13 +40,18 @@ class OrderServiceTest {
     void testCreateOrderSetsPendingStatusAndBackReferences() {
         Order order = new Order();
         logiroute.logiroute_order.domain.entity.OrderItem item = new logiroute.logiroute_order.domain.entity.OrderItem();
+        item.setMenuItemId(UUID.randomUUID());
         order.getItems().add(item);
         
+        logiroute.logiroute_order.dto.MenuItemResponse mockMenuResponse = new logiroute.logiroute_order.dto.MenuItemResponse(
+                item.getMenuItemId(), UUID.randomUUID(), "Burger", 1500, true);
+        when(menuServiceClient.getMenuItems(anyList())).thenReturn(java.util.List.of(mockMenuResponse));
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Order result = orderService.createOrder(order);
 
         assertEquals(OrderStatus.PENDING, result.getStatus());
+        assertEquals(new java.math.BigDecimal("15"), item.getPrice());
         assertEquals(order, item.getOrder(), "Back-reference should be populated");
         verify(orderRepository).save(order);
     }

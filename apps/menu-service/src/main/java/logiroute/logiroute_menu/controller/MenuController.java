@@ -59,6 +59,16 @@ public class MenuController {
         return ResponseEntity.ok(menuService.getMenuItemsByCategory(categoryId));
     }
 
+    @GetMapping("/items/{itemId}")
+    public ResponseEntity<MenuItemResponse> getMenuItem(@PathVariable UUID itemId) {
+        return ResponseEntity.ok(menuService.getMenuItem(itemId));
+    }
+
+    @GetMapping("/items")
+    public ResponseEntity<List<MenuItemResponse>> getMenuItemsByIds(@RequestParam List<UUID> ids) {
+        return ResponseEntity.ok(menuService.getMenuItemsByIds(ids));
+    }
+
     @PutMapping("/items/{itemId}")
     public ResponseEntity<MenuItemResponse> updateMenuItem(
             @PathVariable UUID itemId,
