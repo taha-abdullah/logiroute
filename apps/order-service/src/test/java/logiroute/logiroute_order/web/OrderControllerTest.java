@@ -8,6 +8,7 @@ import logiroute.logiroute_order.dto.OrderItemRequest;
 import logiroute.logiroute_order.dto.OrderResponse;
 import logiroute.logiroute_order.mapper.OrderMapper;
 import logiroute.logiroute_order.service.OrderService;
+import logiroute.logiroute_order.dto.OrderStatusUpdateRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -20,9 +21,11 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(OrderController.class)
@@ -97,5 +100,56 @@ class OrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(orderId.toString()))
                 .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+
+    @Test
+    void testUpdateOrderStatus() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        OrderStatusUpdateRequest request = new OrderStatusUpdateRequest(OrderStatus.ACCEPTED);
+
+        Order mockOrder = new Order();
+        OrderResponse mockResponse = new OrderResponse();
+        mockResponse.setId(orderId);
+        mockResponse.setStatus(OrderStatus.ACCEPTED);
+
+        when(orderService.updateOrderStatus(eq(orderId), eq(OrderStatus.ACCEPTED))).thenReturn(mockOrder);
+        when(orderMapper.toResponse(mockOrder)).thenReturn(mockResponse);
+
+        mockMvc.perform(patch("/api/v1/orders/{id}/status", orderId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(orderId.toString()))
+                .andExpect(jsonPath("$.status").value("ACCEPTED"));
+    }
+
+    @Test
+    void testGetCustomerOrders() throws Exception {
+        String customerId = "mock-customer";
+        Order mockOrder = new Order();
+        OrderResponse mockResponse = new OrderResponse();
+        mockResponse.setId(UUID.randomUUID());
+
+        when(orderService.getCustomerOrders(customerId)).thenReturn(List.of(mockOrder));
+        when(orderMapper.toResponse(mockOrder)).thenReturn(mockResponse);
+
+        mockMvc.perform(get("/api/v1/orders/customers/{customerId}", customerId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(mockResponse.getId().toString()));
+    }
+
+    @Test
+    void testGetRestaurantOrders() throws Exception {
+        UUID restaurantId = UUID.randomUUID();
+        Order mockOrder = new Order();
+        OrderResponse mockResponse = new OrderResponse();
+        mockResponse.setId(UUID.randomUUID());
+
+        when(orderService.getRestaurantOrders(restaurantId)).thenReturn(List.of(mockOrder));
+        when(orderMapper.toResponse(mockOrder)).thenReturn(mockResponse);
+
+        mockMvc.perform(get("/api/v1/orders/restaurants/{restaurantId}", restaurantId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(mockResponse.getId().toString()));
     }
 }

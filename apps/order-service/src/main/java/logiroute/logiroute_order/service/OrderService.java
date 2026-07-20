@@ -40,6 +40,16 @@ public class OrderService {
                 .orElseThrow(() -> new EntityNotFoundException("Order not found with ID: " + id));
     }
 
+    @Transactional(readOnly = true)
+    public java.util.List<Order> getCustomerOrders(String customerId) {
+        return orderRepository.findByCustomerId(customerId);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<Order> getRestaurantOrders(UUID restaurantId) {
+        return orderRepository.findByRestaurantId(restaurantId);
+    }
+
     @Transactional
     public Order updateOrderStatus(UUID id, OrderStatus newStatus) {
         Order order = getOrder(id);

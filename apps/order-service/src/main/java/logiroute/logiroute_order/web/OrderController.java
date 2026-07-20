@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import logiroute.logiroute_order.domain.entity.Order;
 import logiroute.logiroute_order.dto.OrderCreateRequest;
 import logiroute.logiroute_order.dto.OrderResponse;
+import logiroute.logiroute_order.dto.OrderStatusUpdateRequest;
 import logiroute.logiroute_order.mapper.OrderMapper;
 import logiroute.logiroute_order.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -36,5 +38,31 @@ public class OrderController {
     public ResponseEntity<OrderResponse> getOrder(@PathVariable UUID id) {
         Order order = orderService.getOrder(id);
         return ResponseEntity.ok(orderMapper.toResponse(order));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<OrderResponse> updateOrderStatus(
+            @PathVariable UUID id,
+            @Valid @RequestBody OrderStatusUpdateRequest request) {
+        Order updatedOrder = orderService.updateOrderStatus(id, request.status());
+        return ResponseEntity.ok(orderMapper.toResponse(updatedOrder));
+    }
+
+    @GetMapping("/customers/{customerId}")
+    public ResponseEntity<List<OrderResponse>> getCustomerOrders(@PathVariable String customerId) {
+        List<Order> orders = orderService.getCustomerOrders(customerId);
+        List<OrderResponse> response = orders.stream()
+                .map(orderMapper::toResponse)
+                .toList();
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/restaurants/{restaurantId}")
+    public ResponseEntity<List<OrderResponse>> getRestaurantOrders(@PathVariable UUID restaurantId) {
+        List<Order> orders = orderService.getRestaurantOrders(restaurantId);
+        List<OrderResponse> response = orders.stream()
+                .map(orderMapper::toResponse)
+                .toList();
+        return ResponseEntity.ok(response);
     }
 }
