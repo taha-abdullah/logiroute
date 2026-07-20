@@ -18,11 +18,17 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import logiroute.logiroute_order.event.OrderReadyEvent;
+
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
 
     @Mock
     private OrderRepository orderRepository;
+
+    @Mock
+    private RabbitTemplate rabbitTemplate;
 
     @InjectMocks
     private OrderService orderService;
@@ -78,5 +84,26 @@ class OrderServiceTest {
         );
         
         verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void testUpdateOrderStatusToReadyPublishesEvent() {
+        UUID orderId = UUID.randomUUID();
+        Order order = new Order();
+        order.setId(orderId);
+        order.setRestaurantId(UUID.randomUUID());
+        order.setCustomerId("customer-1");
+        order.setStatus(OrderStatus.PREPARING); // Valid next state: READY_FOR_PICKUP
+        
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        orderService.updateOrderStatus(orderId, OrderStatus.READY_FOR_PICKUP);
+
+        verify(rabbitTemplate).convertAndSend(
+                eq("order-events-exchange"),
+                eq("order.status.ready"),
+                any(OrderReadyEvent.class)
+        );
     }
 }

@@ -5,6 +5,9 @@ import logiroute.logiroute_order.domain.entity.Order;
 import logiroute.logiroute_order.domain.enums.OrderStatus;
 import logiroute.logiroute_order.repository.OrderRepository;
 import logiroute.logiroute_order.exception.InvalidOrderStateException;
+import logiroute.logiroute_order.event.OrderReadyEvent;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,6 +21,7 @@ import java.util.UUID;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final RabbitTemplate rabbitTemplate;
 
     @Transactional
     public Order createOrder(Order order) {
@@ -46,7 +50,30 @@ public class OrderService {
         Order updatedOrder = orderRepository.save(order);
         log.info("Order {} status updated to {}", id, newStatus);
         
-        // TODO: Publish RabbitMQ event here for Delivery Service if status == READY_FOR_PICKUP
+        if (newStatus == OrderStatus.READY_FOR_PICKUP) {
+            BigDecimal estimatedValue = updatedOrder.getItems().stream()
+                    .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    
+            Integer totalItems = updatedOrder.getItems().stream()
+                    .mapToInt(logiroute.logiroute_order.domain.entity.OrderItem::getQuantity)
+                    .sum();
+
+            OrderReadyEvent event = new OrderReadyEvent(
+                    updatedOrder.getId(),
+                    updatedOrder.getRestaurantId(),
+                    updatedOrder.getCustomerId(),
+                    totalItems,
+                    estimatedValue
+            );
+
+            rabbitTemplate.convertAndSend(
+                    logiroute.logiroute_order.config.RabbitMQConfig.ORDER_EVENTS_EXCHANGE,
+                    "order.status.ready",
+                    event
+            );
+            log.info("Published OrderReadyEvent for order {}", id);
+        }
         
         return updatedOrder;
     }

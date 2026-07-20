@@ -15,4 +15,10 @@ class TestcontainersConfiguration {
 		return new PostgreSQLContainer(DockerImageName.parse("postgres:latest"));
 	}
 
+	@Bean
+	@ServiceConnection
+	org.testcontainers.containers.RabbitMQContainer rabbitContainer() {
+		return new org.testcontainers.containers.RabbitMQContainer(DockerImageName.parse("rabbitmq:3-management"));
+	}
+
 }
